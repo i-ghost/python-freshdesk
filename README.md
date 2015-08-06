@@ -1,13 +1,21 @@
 # python-freshdesk
 
+This is a fork with the purpose of extending the API. **Consider it unstable.**
+
+**TODO**:
+* Extend Ticket API to allow modifications
+* Add support for ["Forum Post" API](http://freshdesk.com/api#create_post) (Are these any different from models.Post?/api.topics.get_topic().posts?)
+* Add support for ["Forum Category" API](http://freshdesk.com/api#forum-category)
+
+Anything below this line is subject to change.
+***
 A library for the [Freshdesk](http://freshdesk.com/) helpdesk system for Python 2.7 and 3.
 
 Currently it only supports the following API features:
 
+* Getting and modifying a [Topic](http://freshdesk.com/api#forum-topic)
 * Getting a [Ticket](http://freshdesk.com/api#view_a_ticket) and filtering ticket lists
 * Getting a [Contact/User](http://freshdesk.com/api#view_user)
-
-[![Build Status](https://travis-ci.org/sjkingo/python-freshdesk.svg)](https://travis-ci.org/sjkingo/python-freshdesk) [![Coverage Status](https://img.shields.io/coveralls/sjkingo/python-freshdesk.svg)](https://coveralls.io/r/sjkingo/python-freshdesk)
 
 ## Installation
 
