@@ -4,6 +4,60 @@ from requests.exceptions import HTTPError
 
 from freshdesk.models import *
 
+class SolutionAPI(object):
+    """Provides an interface to solutions on a Freshdesk instance"""
+    def __init__(self, api):
+        self._api = api
+
+    # Categories
+    def create_category(self, name, description):
+        """Create and return a solution category"""
+        url = 'solution/categories.json'
+        data = self._api._create_post("solution_category", name=name, description=description)
+        return self._api._post(url, data=data)
+
+    def get_category(self, category_id):
+        """Return a solution category for a given id"""
+        url = 'solution/categories/%d.json' % category_id
+        return SolutionCategory(self._api, **self._api._get(url)['category'])
+
+    def list_categories(self):
+        """Return a list of all solution categories"""
+        url = 'solution/categories.json'
+        return [self.get_solution_category(c['category'] for c in self._api._get(url))]
+
+    # Folders
+
+    def create_folder(self, category_id, name, visibility, description, customer_folder_attributes=[]):
+        """Create and return a solution folder for a given category id
+        :param int category_id: Category ID of the containing category
+        :param str name: The name of the new folder
+        :param int visibility: 1: All, 2: Logged in users, 3: Agents only, 4: Company Specific Users
+        :param str description: A description of the new folder
+        :param list[int: customer_id] customer_folder_attributes: A list of companies to which this folder is visible"""
+        url = 'solution/categories/%d/folders.json' % category_id
+        data = self._api._create_post("solution_folder", category_id=category_id, name=name, visibility=visibility, description=description, customer_folder_attributes=customer_folder_attributes)
+        return SolutionFolder(self._api, **self._api._post(url, data)['folder'])
+
+    # Articles
+
+    def get_article(self, category_id, folder_id, solution_id):
+        """Return a solution article for the given ids"""
+        url = 'solution/categories/%d/folders/%d/articles/%d.json' % (category_id, folder_id, solution_id)
+        return Solution(self._api, **self._api._get(url)['article'])
+
+    def delete_article(self, category_id, folder_id, solution_id):
+        """Delete a solution article for the given ids"""
+        url = 'solution/categories/%d/folders/%d/articles/%d.json'
+        return self._api._delete(url)
+
+    def create_article(self, category_id, folder_id, title, status, art_type, description, tags=[]):
+        """Creates a solution article in the given category and folder"""
+        # TODO: implement tags
+        url = '/solution/categories/%d/folders/%d/articles.json' % (category_id, folder_id)
+        data = self._api._create_post("solution_article", folder_id=folder_id, title=title, status=status, art_type=art_type, description=description)
+        return Solution(self._api, **self._api._post(url, data=data)['article'])
+
 class TopicAPI(object):
     """Provides an interface to topics on a Freshdesk instance"""
     def __init__(self, api):
@@ -23,8 +77,7 @@ class TopicAPI(object):
         """Create a new topic and return it as a new Topic instance"""
         url = 'discussions/topics.json'
         data = self._api._create_post("topic", forum_id=forum_id, title=title, locked=locked, body_html=body_html)
-        # API does not return posts when creating the topic, so we take the returned id and use get_topic()
-        return self.get_topic(self._api._post(url, data=data)['topic']['id'])
+        return self._api._post(url, data=data)['topic']
 
 class TicketAPI(object):
     """Provides an interface to tickets on a Freshdesk instance"""
@@ -82,8 +135,13 @@ class ContactAPI(object):
         self._api = api
 
     def get_contact(self, contact_id):
+        """Get a contact's details by id"""
         url = 'contacts/%s.json' % contact_id
         return Contact(**self._api._get(url)['user'])
+
+    def create_contact(self, name, email):
+        url = 'contacts.json'
+        return Contact(self._api._post(self._api._create_post("user", name=name, email=email))['user'])
 
 class API(object):
     def __init__(self, domain, user=None, password=None, api_key=None):
@@ -94,9 +152,10 @@ class API(object):
         :param str api_key:   the API key - NOTE: username and password are ignored if specified
 
         Instances:
-          .tickets:  the Ticket API
-          .contacts: the Contacts API
-          .topics:   the Topics API
+          .tickets:   the Ticket API
+          .contacts:  the Contacts API
+          .topics:    the Topics API
+          .solutions: the Solutions API
         """
 
         self._api_prefix = 'http://{}/'.format(domain.rstrip('/'))
@@ -110,6 +169,7 @@ class API(object):
         self.tickets = TicketAPI(self)
         self.contacts = ContactAPI(self)
         self.topics = TopicAPI(self)
+        self.solutions = SolutionAPI(self)
 
     def _create_post(self, post_type="", **kwargs):
         """Internal: Create a post body
