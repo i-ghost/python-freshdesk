@@ -87,7 +87,7 @@ class TicketAPI(object):
     def get_ticket(self, ticket_id):
         """Fetches the ticket for the given ticket ID"""
         url = 'helpdesk/tickets/%d.json' % ticket_id
-        return Ticket(**self._api._get(url)['helpdesk_ticket'])
+        return Ticket(self._api, **self._api._get(url)['helpdesk_ticket'])
 
     def list_tickets(self, **kwargs):
         """List all tickets, optionally filtered by a view. Specify filters as
@@ -137,7 +137,7 @@ class ContactAPI(object):
     def get_contact(self, contact_id):
         """Get a contact's details by id"""
         url = 'contacts/%s.json' % contact_id
-        return Contact(**self._api._get(url)['user'])
+        return Contact(self._api, **self._api._get(url)['user'])
 
     def create_contact(self, name, email):
         url = 'contacts.json'
