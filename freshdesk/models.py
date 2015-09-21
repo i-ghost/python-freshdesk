@@ -3,7 +3,7 @@ import sys
 import inspect
 
 class FreshdeskModel(object):
-    """Base class for Fershdesk objects.
+    """Base class for Freshdesk objects.
     Maps the JSON response from the web API to instance variables
     Convenience variables and methods are defined at a higher level"""
     _keys = set()
@@ -11,7 +11,6 @@ class FreshdeskModel(object):
     def __init__(self, api, **kwargs):
         self._api = api
         for k, v in kwargs.items():
-            print("%s: %s" % (k, v))
             # prevent clobbering with our properties below
             if hasattr(Topic, k):
                 k = '_' + k
@@ -20,6 +19,8 @@ class FreshdeskModel(object):
             if hasattr(SolutionFolder, k):
                 k = '_' + k
             if hasattr(Solution, k):
+                k = '_' + k
+            if hasattr(SolutionCategory, k):
                 k = '_' + k
             setattr(self, k, v)
             self._keys.add(k)
@@ -163,11 +164,16 @@ class SolutionFolder(FreshdeskModel):
     .description: A text description of the category
     .is_default: Is this a default folder?
     .articles: A list of articles contained in the folder"""
+
     def __str__(self):
         return self.name
 
     def __repr__(self):
         return 'Solution folder \'{}\'>'.format(self.name)
+
+    @property
+    def category_id(self):
+        return self._category_id
 
     @property
     def visibility(self):

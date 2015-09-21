@@ -24,7 +24,7 @@ class SolutionAPI(object):
     def list_categories(self):
         """Return a list of all solution categories"""
         url = 'solution/categories.json'
-        return [self.get_solution_category(c['category'] for c in self._api._get(url))]
+        return [self.get_category(c['category']['id']) for c in self._api._get(url)]
 
     # Folders
 
@@ -39,6 +39,26 @@ class SolutionAPI(object):
         data = self._api._create_post("solution_folder", category_id=category_id, name=name, visibility=visibility, description=description, customer_folder_attributes=customer_folder_attributes)
         return SolutionFolder(self._api, **self._api._post(url, data)['folder'])
 
+    def get_folder(self, category_id, folder_id):
+        """Returns a solution folder for a given category_id and folder_id"""
+        url = "solution/categories/%d/folders/%d.json" % (category_id, folder_id)
+        return SolutionFolder(self._api, **self._api._get(url)['folder'])
+
+    def update_folder(self, category_id, folder_id, name=None, visibility=None, description=None):
+        """Updates a folder
+        :param int visibility: 1: All, 2: Logged in users, 3: Agents only, 4: Company Specific Users
+        :param str description: The new folder description
+        """
+        folder = self.get_folder(category_id, folder_id)
+        url = 'solution/categories/%d/folders/%d.json' % (category_id, folder_id)
+        data = self._api._create_post("solution_folder", name=name or folder.name, visibility=visibility or folder._visibility, description=description or folder.description)
+        return self._api._put(url, data)['folder']
+
+    def list_folders(self, category_id):
+        """Return a list of all solution folders for a given category_id"""
+        url = 'solution/categories/%d.json' % category_id
+        return [self.get_folder(category_id, f['id']) for f in self._api._get(url)['category']['folders']]
+
     # Articles
 
     def get_article(self, category_id, folder_id, solution_id):
@@ -52,11 +72,20 @@ class SolutionAPI(object):
         return self._api._delete(url)
 
     def create_article(self, category_id, folder_id, title, status, art_type, description, tags=[]):
-        """Creates a solution article in the given category and folder"""
+        """Creates a solution article in the given category and folder
+        :param int status: 1 - draft, 2 - published
+        :param int art_type: 1 - permanent, 2 - workaround"""
         # TODO: implement tags
-        url = '/solution/categories/%d/folders/%d/articles.json' % (category_id, folder_id)
+        url = 'solution/categories/%d/folders/%d/articles.json' % (category_id, folder_id)
         data = self._api._create_post("solution_article", folder_id=folder_id, title=title, status=status, art_type=art_type, description=description)
-        return Solution(self._api, **self._api._post(url, data=data)['article'])
+        return self._api._post(url, data=data)['article']
+
+    def update_article(self, category_id, folder_id, solution_id, title=None, description=None, tags=None):
+        """Update a solution article"""
+        article = self.get_article(category_id, folder_id, solution_id)
+        url = '/solution/categories/%d/folders/%d/articles/%d.json' % (category_id, folder_id, solution_id)
+        data = self._api._create_post("solution_article", title=title or article.title, description=description or article.description, tags=tags or article.tags)
+        return self._api._put(url, data=data)
 
 class TopicAPI(object):
     """Provides an interface to topics on a Freshdesk instance"""
